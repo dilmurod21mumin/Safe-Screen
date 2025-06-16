@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.*
+import android.media.AudioManager
 import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
@@ -12,6 +13,10 @@ import android.media.projection.MediaProjectionManager
 import android.os.*
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.example.safescreen.ScreenMonitorService.Companion.TAG
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -27,6 +32,8 @@ class ScreenMonitorService : Service() {
     private val isRunning = AtomicBoolean(false)
     private var executor = Executors.newSingleThreadScheduledExecutor()
     private val handler = Handler(Looper.getMainLooper())
+
+    private var nsfwStrikeCount = 0
 
     // ✅ MediaProjection callback
     private val projectionCallback = object : MediaProjection.Callback() {
@@ -169,14 +176,14 @@ class ScreenMonitorService : Service() {
             Log.e(TAG, "ImageReader is null")
             return
         }
-
         var image: Image? = null
         var bitmap: Bitmap? = null
         var scaledBitmap: Bitmap? = null
-
         try {
             image = imageReader?.acquireLatestImage() ?: return
             bitmap = ImageUtils.imageToBitmap(image) ?: return
+
+            //saveBitmapToFile(bitmap)
 
             scaledBitmap = if (bitmap.width > 720 || bitmap.height > 1280) {
                 ImageUtils.downscaleBitmap(bitmap, 720, 1280)
@@ -184,22 +191,51 @@ class ScreenMonitorService : Service() {
                 bitmap
             }
 
-            val processed = ImageProcessor.processImage(scaledBitmap)
-            val score = nsfwDetector?.predict(processed) ?: 0.0f
+            val orientation = if (scaledBitmap.height > scaledBitmap.width) "portrait" else "landscape"
 
-            Log.d(TAG, "NSFW detection score: $score")
 
-            handler.post {
-                try {
-                    if (score > 0.5) {
-                        overlayManager.show()
-                    } else {
-                        overlayManager.hide()
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error updating overlay: ${e.message}", e)
+            // Step 1: check full image
+            val fullScore = nsfwDetector?.predict(ImageProcessor.processImage(scaledBitmap)) ?: 0f
+            Log.d(TAG, "NSFW full score: $fullScore")
+            if (fullScore > 0.5f) {
+                handleNsfwDetection(true)
+                Log.d(TAG,"NSFW in full returned")
+                return
+            }
+
+            // Step 2: check center crop
+            val center = cropCenter(scaledBitmap, 0.4f)
+
+            val centerScore = nsfwDetector?.predict(ImageProcessor.processImage(center)) ?: 0f
+            Log.d(TAG, "NSFW center score: $centerScore")
+            if (centerScore > 0.5f) {
+                handleNsfwDetection(true)
+                Log.d(TAG,"NSFW in center returned")
+                return
+            }
+            center.recycle()
+
+            // Step 3: check top and bottom areas (e.g. YouTube in mini-player mode)
+            val topBottomParts = listOf(
+                Bitmap.createBitmap(scaledBitmap, 0, 0, scaledBitmap.width, scaledBitmap.height / 3), // top 1/3
+                Bitmap.createBitmap(scaledBitmap, 0, (scaledBitmap.height * 2) / 3, scaledBitmap.width, scaledBitmap.height / 3) // bottom 1/3
+            )
+
+            for ((i, part) in topBottomParts.withIndex()) {
+                val score = nsfwDetector?.predict(ImageProcessor.processImage(part)) ?: 0f
+                Log.d(TAG, "NSFW topBottom[$i] score: $score")
+
+                if (score > 0.5f) {
+                    handleNsfwDetection(true)
+                    Log.d(TAG, "NSFW detected in ${if (i == 0) "top" else "bottom"} part")
+                    return
                 }
             }
+            topBottomParts.forEach { it.recycle() }
+
+            // If all checks passed, hide overlay
+            handler.post { overlayManager.hide() }
+
         } catch (e: Exception) {
             Log.e(TAG, "Error processing image: ${e.message}", e)
         } finally {
@@ -211,6 +247,61 @@ class ScreenMonitorService : Service() {
                 Log.e(TAG, "Error cleaning up resources: ${e.message}", e)
             }
         }
+    }
+
+    private fun handleNsfwDetection(detected: Boolean) {
+        handler.post {
+            try {
+                if (detected) {
+                    overlayManager.show()
+                    muteMediaSound(true)
+                    nsfwStrikeCount++
+
+                    Log.d(TAG, "NSFW detected — strike $nsfwStrikeCount")
+
+                    if (nsfwStrikeCount >= 4) {
+                        Log.d(TAG, "NSFW shown 4 times — closing app")
+                        muteMediaSound(false)
+                        val intent = Intent(Intent.ACTION_MAIN).apply {
+                            addCategory(Intent.CATEGORY_HOME)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        startActivity(intent)
+
+                    }
+                } else {
+                    overlayManager.hide()
+                    muteMediaSound(false)
+                    nsfwStrikeCount = 0
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error updating overlay: ${e.message}", e)
+            }
+        }
+    }
+
+
+    private fun muteMediaSound(mute: Boolean) {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val stream = AudioManager.STREAM_MUSIC
+            audioManager.adjustStreamVolume(
+                stream,
+                if (mute) AudioManager.ADJUST_MUTE else AudioManager.ADJUST_UNMUTE,
+                0
+            )
+        }
+    }
+
+
+    private fun cropCenter(bitmap: Bitmap, scale: Float): Bitmap {
+        val w = bitmap.width
+        val h = bitmap.height
+        val sw = (w * scale).toInt()
+        val sh = (h * scale).toInt()
+        val left = (w - sw) / 2
+        val top = (h - sh) / 2
+        return Bitmap.createBitmap(bitmap, left, top, sw, sh)
     }
 
     private fun stopCapture() {
@@ -275,6 +366,21 @@ class ScreenMonitorService : Service() {
             Log.d(TAG, "Notification created")
         } catch (e: Exception) {
             Log.e(TAG, "Error creating notification: ${e.message}", e)
+        }
+    }
+
+    // saving screen image
+
+    private fun saveBitmapToFile(bitmap: Bitmap) {
+        val filename = "screenshot_${System.currentTimeMillis()}.png"
+        val file = File(getExternalFilesDir(null), filename)
+        try {
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                Log.d(TAG, "Screenshot saved to ${file.absolutePath}")
+            }
+        } catch (e: IOException) {
+            Log.e(TAG, "Failed to save screenshot: ${e.message}", e)
         }
     }
 }

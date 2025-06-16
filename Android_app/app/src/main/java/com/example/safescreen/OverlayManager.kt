@@ -27,12 +27,12 @@ class OverlayManager(private val context: Context) {
 
             // Create overlay view with a simple TextView for warning
             val view = TextView(context).apply {
-                text = "⚠️ Inappropriate Content Detected"
+                text = "⚠️ Zararli kontent aniqlandi!"
                 textSize = 24f
                 setTextColor(Color.WHITE)
                 gravity = Gravity.CENTER
                 setPadding(20, 20, 20, 20)
-                setBackgroundColor(Color.argb(200, 0, 0, 0))
+                setBackgroundColor(Color.argb(255, 0, 0, 30))
             }
 
             // Configure window parameters
@@ -45,9 +45,12 @@ class OverlayManager(private val context: Context) {
                     WindowManager.LayoutParams.TYPE_PHONE,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                         WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_OVERSCAN,
                 PixelFormat.TRANSLUCENT
             )
+
 
             // Add view to window
             windowManager.addView(view, params)

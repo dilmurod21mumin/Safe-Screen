@@ -11,30 +11,21 @@ object ImageUtils {
     fun imageToBitmap(image: Image): Bitmap? {
         return try {
             Log.d(TAG, "Converting Image to Bitmap: ${image.width}x${image.height}")
-
-            val planes = image.planes
-            val buffer = planes[0].buffer
-            val pixelStride = planes[0].pixelStride
-            val rowStride = planes[0].rowStride
+            val plane = image.planes[0]
+            val buffer = plane.buffer
+            val pixelStride = plane.pixelStride
+            val rowStride = plane.rowStride
             val rowPadding = rowStride - pixelStride * image.width
+            val width = image.width
+            val height = image.height
 
-            // Create bitmap
-            val bitmap = Bitmap.createBitmap(
-                image.width + rowPadding / pixelStride,
-                image.height,
-                Bitmap.Config.ARGB_8888
-            )
+            val bitmap = Bitmap.createBitmap(width + rowPadding / pixelStride, height, Bitmap.Config.ARGB_8888)
+            val pixels = IntArray((rowStride / pixelStride) * height)
 
+            buffer.rewind()
             bitmap.copyPixelsFromBuffer(buffer)
-
-            // Crop to exact dimensions
-            val croppedBitmap = Bitmap.createBitmap(bitmap, 0, 0, image.width, image.height)
-
-            // Clean up the original bitmap if it's different from the cropped one
-            if (bitmap != croppedBitmap) {
-                bitmap.recycle()
-            }
-
+            val croppedBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height)
+            if (bitmap != croppedBitmap) bitmap.recycle()
             Log.d(TAG, "Image converted to Bitmap successfully")
             croppedBitmap
         } catch (e: Exception) {
