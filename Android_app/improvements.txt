@@ -1,6 +1,8 @@
 qilinishi kerak:
 
+screen shoot bermaydigan ilovalardan screenshoot olish
 Unit test;
+
 custom user test;
 icon invisible;
 relaunch after shutting down or restart;
