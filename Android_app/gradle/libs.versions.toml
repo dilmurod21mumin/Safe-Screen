@@ -13,6 +13,8 @@ tensorflowLiteSupport = "2.10.0"
 appcompat = "1.7.0"
 tensorflowLiteSupportVersion = "2.13.0"
 tensorflowLiteVersion = "2.13.0"
+uiToolingPreview = "1.10.6"
+uiTooling = "1.10.6"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -36,6 +38,8 @@ tensorflow-lite-support = { module = "org.tensorflow:tensorflow-lite-support", v
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 tensorflow-lite-support-v2130 = { module = "org.tensorflow:tensorflow-lite-support", version.ref = "tensorflowLiteSupportVersion" }
 tensorflow-lite-v2130 = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflowLiteVersion" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "uiToolingPreview" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "uiTooling" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

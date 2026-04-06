@@ -32,6 +32,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import com.example.safescreen.ui.theme.SafeScreenTheme
 
@@ -252,7 +253,7 @@ fun HomeScreen(
             ) {
                 Column {
                     Text(
-                        text = "SafeScreen",
+                        text = "Safe Screen",
                         fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -270,15 +271,15 @@ fun HomeScreen(
                 IconButton(
                     onClick = { showAboutSheet = true },
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(84.dp)
                         .background(Color(0xFF1A2540), CircleShape)
                 ) {
                     Image(
-                        painter = painterResource(id = R.mipmap.logo),
+                        painter = painterResource(id = R.mipmap.safe),
                         contentDescription = "Haqida",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(28.dp)
+                            .size(72.dp)
                             .clip(CircleShape)
                     )
                 }
@@ -324,7 +325,7 @@ fun HomeScreen(
                 ) {
                     Image(
                         painter = painterResource(id = R.mipmap.logo),
-                        contentDescription = null,
+                        contentDescription = "Haqida",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(100.dp)
@@ -748,12 +749,20 @@ fun AboutBottomSheet(onDismiss: () -> Unit) {
                 modifier = Modifier
                     .size(72.dp)
                     .background(
-                        Brush.linearGradient(listOf(Color(0xFF1565C0), Color(0xFF0288D1))),
+                        Brush.linearGradient(listOf(Color(0x662979FF), Color(0x3300BCD4))),
                         CircleShape
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Shield, contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp))
+
+                Image(
+                    painter = painterResource(id = R.mipmap.logo),
+                    contentDescription = "Haqida",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                )
             }
             Spacer(Modifier.height(14.dp))
             Text("SafeScreen", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
