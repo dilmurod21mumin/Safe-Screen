@@ -33,6 +33,8 @@ class ScreenMonitorService : Service() {
     private var executor = Executors.newSingleThreadScheduledExecutor()
     private val handler = Handler(Looper.getMainLooper())
 
+    private var isOverlayVisible = false
+
     private var nsfwStrikeCount = 0
 
     private val projectionCallback = object : MediaProjection.Callback() {
@@ -193,6 +195,9 @@ class ScreenMonitorService : Service() {
     }
 
     private fun processLatestImage() {
+        // Don't process if overlay is visible OR detection is paused
+        if (isOverlayVisible || !isRunning.get()) return
+
         if (imageReader == null) {
             Log.e(TAG, "ImageReader is null")
             return
@@ -201,8 +206,6 @@ class ScreenMonitorService : Service() {
         var image: Image? = null
         var bitmap: Bitmap? = null
         var scaledBitmap: Bitmap? = null
-
-        // Collect all cropped bitmaps so we can recycle them safely in finally{}
         val cropBitmaps = mutableListOf<Bitmap>()
 
         try {
@@ -252,13 +255,18 @@ class ScreenMonitorService : Service() {
                 return
             }
 
-            // All checks passed — hide overlay and reset strikes
-            handleNsfwDetection(false)
+            // ✅ All checks passed — clean frame detected
+            // Only reset if overlay is visible (to clear it) or if we have strikes
+            if (isOverlayVisible || nsfwStrikeCount > 0) {
+                handleNsfwDetection(false)
+            } else {
+                // Ensure strike count is 0 when everything is clean
+                nsfwStrikeCount = 0
+            }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error processing image: ${e.message}", e)
         } finally {
-            // FIX: always recycle ALL crop bitmaps regardless of early return
             cropBitmaps.forEach { if (!it.isRecycled) it.recycle() }
             try {
                 image?.close()
@@ -274,27 +282,60 @@ class ScreenMonitorService : Service() {
         handler.post {
             try {
                 if (detected) {
-                    overlayManager.show()
-                    muteMediaSound(true)
+                    // Don't increment strikes if we're already showing the overlay
+                    if (isOverlayVisible) {
+                        Log.d(TAG, "NSFW detected but overlay already visible — ignoring")
+                        return@post
+                    }
+
                     nsfwStrikeCount++
                     Log.d(TAG, "NSFW detected — strike $nsfwStrikeCount")
 
-                    if (nsfwStrikeCount >= 5) {
-                        Log.d(TAG, "NSFW shown 5 times — going home")
-                        muteMediaSound(false)
-                        // FIX: Reset strike count so it doesn't trigger on every subsequent frame
+                    if (nsfwStrikeCount >= 3) {
+                        Log.d(TAG, "NSFW shown 3 times — going home")
+                        // Reset variables
                         nsfwStrikeCount = 0
-                        startActivity(
-                            Intent(Intent.ACTION_MAIN).apply {
-                                addCategory(Intent.CATEGORY_HOME)
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        overlayManager.hide()
+                        muteMediaSound(false)
+                        isOverlayVisible = false
+                        isRunning.set(true)
+
+                        // Kick user to Home Screen
+                        val intent = Intent(Intent.ACTION_MAIN).apply {
+                            addCategory(Intent.CATEGORY_HOME)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        }
+                        startActivity(intent)
+                    } else {
+                        // Strike 1 or 2: Show overlay as a warning
+                        overlayManager.show()
+                        muteMediaSound(true)
+                        isOverlayVisible = true
+
+                        // Pause processing so we don't scan our own black overlay
+                        isRunning.set(false)
+
+                        // Automatically hide the warning after 2.5 seconds to re-evaluate the screen
+                        handler.postDelayed({
+                            if (isOverlayVisible) {
+                                overlayManager.hide()
+                                muteMediaSound(false)
+                                isOverlayVisible = false
+                                // Resume processing to see if they scrolled away
+                                isRunning.set(true)
                             }
-                        )
+                        }, 2500) // 2.5 seconds penalty/warning
                     }
                 } else {
-                    // FIX: this branch is now actually reached when all scans pass
-                    overlayManager.hide()
-                    muteMediaSound(false)
+                    // Clean frame detected
+                    if (isOverlayVisible) {
+                        Log.d(TAG, "Clean frame detected — hiding overlay")
+                        overlayManager.hide()
+                        muteMediaSound(false)
+                        isOverlayVisible = false
+                        isRunning.set(true)
+                    }
+                    // Crucial: Reset strikes to 0 if the user scrolled away to safe content
                     nsfwStrikeCount = 0
                 }
             } catch (e: Exception) {
@@ -302,6 +343,7 @@ class ScreenMonitorService : Service() {
             }
         }
     }
+
 
     private fun muteMediaSound(mute: Boolean) {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager

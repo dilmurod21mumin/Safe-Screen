@@ -7,25 +7,23 @@ import android.os.Build
 import android.util.Log
 import android.view.*
 import android.widget.TextView
-import java.util.concurrent.atomic.AtomicBoolean
 
 class OverlayManager(private val context: Context) {
     private val TAG = "OverlayManager"
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private var overlayView: View? = null
-    private val isShowing = AtomicBoolean(false)
+
+    /** True when the overlay window is currently added to the WindowManager. */
+    val isShowing: Boolean
+        get() = overlayView != null
 
     fun show() {
-        if (isShowing.getAndSet(true)) {
-            // Already showing
-            Log.d(TAG, "Overlay already showing")
+        if (isShowing) {
+            Log.d(TAG, "Overlay already showing — skipping")
             return
         }
-
         try {
             Log.d(TAG, "Showing overlay")
-
-            // Create overlay view with a simple TextView for warning
             val view = TextView(context).apply {
                 text = "⚠️ Zararli kontent aniqlandi!"
                 textSize = 24f
@@ -35,13 +33,13 @@ class OverlayManager(private val context: Context) {
                 setBackgroundColor(Color.argb(255, 0, 0, 30))
             }
 
-            // Configure window parameters
             val params = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                 else
+                    @Suppress("DEPRECATION")
                     WindowManager.LayoutParams.TYPE_PHONE,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                         WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
@@ -51,33 +49,29 @@ class OverlayManager(private val context: Context) {
                 PixelFormat.TRANSLUCENT
             )
 
-
-            // Add view to window
             windowManager.addView(view, params)
             overlayView = view
-
             Log.d(TAG, "Overlay shown successfully")
         } catch (e: Exception) {
             Log.e(TAG, "Error showing overlay: ${e.message}", e)
-            isShowing.set(false)
+            overlayView = null
         }
     }
 
     fun hide() {
-        if (!isShowing.getAndSet(false)) {
-            // Already hidden
+        val view = overlayView ?: run {
+            Log.d(TAG, "Overlay already hidden — skipping")
             return
         }
-
         try {
             Log.d(TAG, "Hiding overlay")
-            overlayView?.let {
-                windowManager.removeView(it)
-                overlayView = null
-                Log.d(TAG, "Overlay hidden successfully")
-            }
+            windowManager.removeView(view)
+            Log.d(TAG, "Overlay hidden successfully")
         } catch (e: Exception) {
             Log.e(TAG, "Error hiding overlay: ${e.message}", e)
+        } finally {
+            // Always clear the reference so isShowing returns false
+            overlayView = null
         }
     }
 }
