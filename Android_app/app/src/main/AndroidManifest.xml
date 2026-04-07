@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.example.safescreen">
+    package="com.dilmurod.safescreen">
 
     <!-- Essential permissions -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -25,7 +25,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SafeScreen">
 
-        <receiver android:name=".BootReceiver"
+        <receiver android:name="com.dilmurod.safescreen.BootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
@@ -36,7 +36,7 @@
 
         <!-- Main Activity -->
         <activity
-            android:name=".MainActivity"
+            android:name="com.dilmurod.safescreen.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.SafeScreen">
             <intent-filter>
@@ -47,13 +47,13 @@
 
         <!-- Capture Permission Activity -->
         <activity
-            android:name=".CapturePermissionActivity"
+            android:name="com.dilmurod.safescreen.CapturePermissionActivity"
             android:exported="false"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <!-- Screen Monitor Service -->
         <service
-            android:name=".ScreenMonitorService"
+            android:name="com.dilmurod.safescreen.ScreenMonitorService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="mediaProjection|specialUse">

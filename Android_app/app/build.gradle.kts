@@ -5,17 +5,27 @@ plugins {
 }
 
 android {
-    namespace = "com.example.safescreen"
+    namespace = "com.dilmurod.safescreen"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.safescreen"
+        applicationId = "com.dilmurod.safescreen"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 
     buildTypes {
