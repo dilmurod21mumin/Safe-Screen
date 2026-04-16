@@ -342,7 +342,7 @@ fun HomeScreen(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Ekraningizni nomaqbul kontentdan\nautomatik himoyalaydi",
+                text = "Ekraningizni nomaqbul kontentdan\navtomatik himoyalaydi",
                 fontSize = 14.sp,
                 color = Color(0xFF78909C),
                 textAlign = TextAlign.Center,
@@ -823,7 +823,7 @@ fun AboutBottomSheet(onDismiss: () -> Unit) {
                 value = "Privacy Policy",
                 color = Color(0xFF9C27B0),
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://drive.google.com/file/d/1f86eplG_JE57-EbiHH8udi1Sg70BHJgo/view?usp=sharing"))
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://dilmurod21mumin.github.io/safe-screen-policy/"))
                     context.startActivity(intent)
                 }
             )
