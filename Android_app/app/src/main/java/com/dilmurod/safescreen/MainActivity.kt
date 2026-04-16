@@ -767,7 +767,7 @@ fun AboutBottomSheet(onDismiss: () -> Unit) {
             Text("v1.0.0", fontSize = 13.sp, color = Color(0xFF546E7A))
             Spacer(Modifier.height(6.dp))
             Text(
-                "Ekraningizni nomaqbul kontentdan\nautomatik himoyalovchi dastur",
+                "Ekraningizni nomaqbul kontentdan\navtomatik himoyalovchi dastur",
                 fontSize = 14.sp,
                 color = Color(0xFF78909C),
                 textAlign = TextAlign.Center,
