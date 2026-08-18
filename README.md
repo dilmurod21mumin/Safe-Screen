@@ -78,6 +78,37 @@ The system also provides additional monitoring capabilities for parents. Parents
 
 The key advantage of the system is that it does not analyze only internet content, but **all visual information appearing on the device screen**. This makes it more comprehensive than conventional content-filtering systems.
 
+Yes. Based on your current implementation, I would add a section that describes the **actual current MVP**, rather than describing features that are only planned.
+
+## Current Version — How It Works
+
+The current version of **Safe Screen** is an Android application that uses an offline AI model to monitor the device screen and detect potentially harmful visual content.
+
+The application works continuously in the foreground and captures screen content at regular intervals rather than analyzing every individual frame. In the current implementation, the screen is processed approximately **once per second**, which significantly reduces CPU and battery consumption compared with continuous frame-by-frame analysis.
+
+The captured screen image is processed locally using an **offline image-classification model**, so the content does not need to be uploaded to a remote server for detection. When the model determines that harmful content is present, Safe Screen automatically displays a protective overlay over the detected content.
+
+### Current Workflow
+
+1. Safe Screen runs as a foreground Android service.
+2. The application periodically captures the current screen content.
+3. The captured image is passed to the **offline AI classification model**.
+4. The model analyzes the image and determines whether potentially harmful content is present.
+5. If harmful content is detected, Safe Screen displays an **overlay that covers the screen content**.
+6. The process repeats continuously while the protection service is active.
+
+### Current Architecture
+
+**Android → Screen Capture → Image Preprocessing → Offline AI Model → Classification → Protective Overlay**
+
+This approach allows Safe Screen to work independently of the application or website currently being used. In principle, the same protection mechanism can monitor visual content displayed in browsers, social media applications, video platforms, and other Android applications.
+
+### Current Limitations
+
+The current version is an **MVP** and still has several areas for improvement. The AI model and screen-processing pipeline need further optimization to reduce CPU, RAM, and battery usage while maintaining detection accuracy. Additional features such as more advanced parental controls, cloud-based synchronization, and premium functionality are planned for future versions.
+
+
+
 ---
 
 ## Future Plans
