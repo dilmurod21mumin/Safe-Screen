@@ -764,7 +764,7 @@ fun AboutBottomSheet(onDismiss: () -> Unit) {
             }
             Spacer(Modifier.height(14.dp))
             Text("SafeScreen", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text("v1.0.0", fontSize = 13.sp, color = Color(0xFF546E7A))
+            Text("v2.1.1", fontSize = 13.sp, color = Color(0xFF546E7A))
             Spacer(Modifier.height(6.dp))
             Text(
                 "Ekraningizni nomaqbul kontentdan\navtomatik himoyalovchi dastur",
